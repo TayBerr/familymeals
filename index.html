@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Meal Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drag-preview {
+            opacity: 0.5;
+        }
+        .drop-zone {
+            min-height: 24px;
+        }
+        .drop-zone.drag-over {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-stone-50">
+    <div class="p-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6 border border-stone-200">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-rose-500 text-3xl">👨‍🍳</span>
+                        <h1 class="text-3xl font-semibold text-stone-800">Family Meal Planner</h1>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-stone-600">👥</span>
+                            <label class="text-stone-700 font-medium">Family Size:</label>
+                            <select id="familySize" class="px-3 py-1 border border-stone-300 rounded-md focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4" selected>4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- View Toggle -->
+                <div class="flex gap-2">
+                    <button id="weekViewBtn" class="px-4 py-2 rounded-md font-medium transition-colors bg-rose-100 text-rose-700 border border-rose-300">
+                        Week View
+                    </button>
+                    <button id="monthViewBtn" class="px-4 py-2 rounded-md font-medium transition-colors bg-stone-100 text-stone-600 hover:bg-stone-200">
+                        Month View
+                    </button>
+                    <div class="flex gap-1 ml-4">
+                        <button id="prevWeek" class="px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-md text-stone-600">←</button>
+                        <button id="nextWeek" class="px-3 py-2 bg-stone-100 hover:bg-stone-200 rounded-md text-stone-600">→</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Meal Bank -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold text-stone-800 flex items-center gap-2">
+                                <span class="text-rose-500">👨‍🍳</span>
+                                Meal Bank
+                            </h2>
+                            <button id="addMealBtn" class="p-1 text-rose-500 hover:bg-rose-50 rounded">
+                                <span class="text-xl">+</span>
+                            </button>
+                        </div>
+                        
+                        <div id="mealBank" class="space-y-3">
+                            <!-- Meals will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-4">
+                        <h2 class="text-xl font-semibold text-stone-800 mb-4 flex items-center gap-2">
+                            <span class="text-rose-500">📅</span>
+                            <span id="calendarTitle">Weekly Meal Plan</span>
+                        </h2>
+                        
+                        <div id="calendar" class="grid grid-cols-7 gap-2">
+                            <!-- Calendar will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grocery List & Prep -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Grocery List -->
+                    <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-4">
+                        <h2 class="text-xl font-semibold text-stone-800 mb-4 flex items-center gap-2">
+                            <span class="text-rose-500">🛒</span>
+                            Grocery List
+                        </h2>
+                        <div id="groceryList">
+                            <p class="text-stone-500 italic">Add meals to generate grocery list</p>
+                        </div>
+                    </div>
+
+                    <!-- Prep List -->
+                    <div class="bg-white rounded-lg shadow-sm border border-stone-200 p-4">
+                        <h2 class="text-xl font-semibold text-stone-800 mb-4 flex items-center gap-2">
+                            <span class="text-rose-500">⏰</span>
+                            Prep Ahead
+                        </h2>
+                        <div id="prepList">
+                            <p class="text-stone-500 italic">No prep tasks available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Meal Modal -->
+    <div id="mealModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-lg font-semibold">Add New Meal</h3>
+                <button id="closeModal" class="text-stone-600 hover:text-stone-800">
+                    <span class="text-xl">×</span>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <input
+                    type="text"
+                    id="mealName"
+                    placeholder="Meal name"
+                    class="w-full p-2 border border-stone-300 rounded-md"
+                />
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Meal Type:</label>
+                    <select id="mealType" class="w-full p-2 border border-stone-300 rounded-md">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner" selected>Dinner</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Ingredients:</label>
+                    <div id="ingredientsList" class="space-y-2">
+                        <!-- Ingredients will be populated here -->
+                    </div>
+                    <button id="addIngredientBtn" class="text-rose-500 text-sm hover:text-rose-600 mt-2">
+                        + Add ingredient
+                    </button>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Prep Tasks:</label>
+                    <div id="prepTasksList" class="space-y-2">
+                        <!-- Prep tasks will be populated here -->
+                    </div>
+                    <button id="addPrepTaskBtn" class="text-rose-500 text-sm hover:text-rose-600 mt-2">
+                        + Add prep task
+                    </button>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button id="cancelModal" class="px-4 py-2 text-stone-600 hover:bg-stone-100 rounded-md">
+                        Cancel
+                    </button>
+                    <button id="saveMeal" class="px-4 py-2 bg-rose-500 text-white rounded-md hover:bg-rose-600">
+                        Add Meal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let familySize = 4;
+        let currentView = 'week';
+        let currentWeek = 0;
+        let draggedMeal = null;
+        let plannedMeals = {};
+        let editingMeal = null;
+
+        const storeCategories = {
+            produce: "Produce",
+            meat: "Meat & Seafood", 
+            dairy: "Dairy",
+            frozen: "Frozen",
+            pantry: "Pantry & Dry Goods",
+            bakery: "Bakery"
+        };
+
+        const mealTimes = ['breakfast', 'lunch', 'dinner'];
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // Initial meal bank data
+        let mealBank = [
+            {
+                id: 1, name: "Burgers", mealType: "dinner",
+                ingredients: [
+                    { item: "Ground beef", amount: 1.5, unit: "lbs", category: "meat" },
+                    { item: "Hamburger buns", amount: 8, unit: "count", category: "bakery" },
+                    { item: "Cheese slices", amount: 8, unit: "slices", category: "dairy" },
+                    { item: "Lettuce", amount: 1, unit: "head", category: "produce" },
+                    { item: "Tomato", amount: 2, unit: "large", category: "produce" },
+                    { item: "Onion", amount: 1, unit: "medium", category: "produce" },
+                    { item: "Pickles", amount: 1, unit: "jar", category: "pantry" }
+                ],
+                prepTasks: ["Form patties", "Slice vegetables"],
+                baseFamilySize: 4
+            },
+            {
+                id: 2, name: "Bacon Burgers", mealType: "dinner",
+                ingredients: [
+                    { item: "Ground beef", amount: 1.5, unit: "lbs", category: "meat" },
+                    { item: "Bacon", amount: 8, unit: "slices", category: "meat" },
+                    { item: "Hamburger buns", amount: 8, unit: "count", category: "bakery" },
+                    { item: "Cheese slices", amount: 8, unit: "slices", category: "dairy" },
+                    { item: "Lettuce", amount: 1, unit: "head", category: "produce" },
+                    { item: "Tomato", amount: 2, unit: "large", category: "produce" }
+                ],
+                prepTasks: ["Form patties", "Cook bacon", "Slice vegetables"],
+                baseFamilySize: 4
+            },
+            {
+                id: 3, name: "Maidrites", mealType: "dinner",
+                ingredients: [
+                    { item: "Ground beef", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Hamburger buns", amount: 8, unit: "count", category: "bakery" },
+                    { item: "Onion", amount: 1, unit: "medium", category: "produce" },
+                    { item: "Yellow mustard", amount: 1, unit: "bottle", category: "pantry" },
+                    { item: "Pickles", amount: 1, unit: "jar", category: "pantry" }
+                ],
+                prepTasks: ["Brown ground beef", "Dice onion"],
+                baseFamilySize: 4
+            },
+            {
+                id: 4, name: "Chicken Nuggets", mealType: "dinner",
+                ingredients: [
+                    { item: "Frozen chicken nuggets", amount: 2, unit: "lbs", category: "frozen" },
+                    { item: "Ketchup", amount: 1, unit: "bottle", category: "pantry" },
+                    { item: "Honey mustard", amount: 1, unit: "bottle", category: "pantry" },
+                    { item: "French fries", amount: 1, unit: "bag", category: "frozen" }
+                ],
+                prepTasks: [],
+                baseFamilySize: 4
+            },
+            {
+                id: 5, name: "Grandma's Chicken", mealType: "dinner",
+                ingredients: [
+                    { item: "Chicken breast", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Cornflakes cereal", amount: 1, unit: "box", category: "pantry" },
+                    { item: "Eggs", amount: 2, unit: "large", category: "dairy" },
+                    { item: "Flour", amount: 1, unit: "cup", category: "pantry" },
+                    { item: "Salt", amount: 1, unit: "container", category: "pantry" },
+                    { item: "Pepper", amount: 1, unit: "container", category: "pantry" }
+                ],
+                prepTasks: ["Crush cornflakes", "Pound chicken flat"],
+                baseFamilySize: 4
+            },
+            {
+                id: 6, name: "Buffalo Chicken & Potato Casserole", mealType: "dinner",
+                ingredients: [
+                    { item: "Chicken breast", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Potatoes", amount: 3, unit: "lbs", category: "produce" },
+                    { item: "Buffalo sauce", amount: 1, unit: "bottle", category: "pantry" },
+                    { item: "Cream cheese", amount: 8, unit: "oz", category: "dairy" },
+                    { item: "Shredded cheese", amount: 2, unit: "cups", category: "dairy" },
+                    { item: "Green onions", amount: 1, unit: "bunch", category: "produce" }
+                ],
+                prepTasks: ["Cook chicken", "Slice potatoes"],
+                baseFamilySize: 4
+            },
+            {
+                id: 7, name: "Cheesy Chicken & Rice", mealType: "dinner",
+                ingredients: [
+                    { item: "Chicken breast", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Rice", amount: 2, unit: "cups", category: "pantry" },
+                    { item: "Shredded cheese", amount: 2, unit: "cups", category: "dairy" },
+                    { item: "Chicken broth", amount: 2, unit: "cups", category: "pantry" },
+                    { item: "Frozen mixed vegetables", amount: 1, unit: "bag", category: "frozen" },
+                    { item: "Cream of mushroom soup", amount: 1, unit: "can", category: "pantry" }
+                ],
+                prepTasks: ["Cut chicken into pieces"],
+                baseFamilySize: 4
+            },
+            {
+                id: 8, name: "Tacos", mealType: "dinner",
+                ingredients: [
+                    { item: "Ground beef", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Taco shells", amount: 12, unit: "count", category: "pantry" },
+                    { item: "Taco seasoning", amount: 2, unit: "packets", category: "pantry" },
+                    { item: "Shredded lettuce", amount: 1, unit: "bag", category: "produce" },
+                    { item: "Diced tomatoes", amount: 2, unit: "cans", category: "pantry" },
+                    { item: "Shredded cheese", amount: 2, unit: "cups", category: "dairy" },
+                    { item: "Sour cream", amount: 1, unit: "container", category: "dairy" }
+                ],
+                prepTasks: ["Brown ground beef"],
+                baseFamilySize: 4
+            },
+            {
+                id: 9, name: "Grilled Stuffed Tacos", mealType: "dinner",
+                ingredients: [
+                    { item: "Ground beef", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Large flour tortillas", amount: 8, unit: "count", category: "bakery" },
+                    { item: "Taco seasoning", amount: 2, unit: "packets", category: "pantry" },
+                    { item: "Shredded cheese", amount: 3, unit: "cups", category: "dairy" },
+                    { item: "Sour cream", amount: 1, unit: "container", category: "dairy" },
+                    { item: "Salsa", amount: 1, unit: "jar", category: "pantry" }
+                ],
+                prepTasks: ["Brown ground beef", "Grate extra cheese"],
+                baseFamilySize: 4
+            },
+            {
+                id: 10, name: "Nachos", mealType: "dinner",
+                ingredients: [
+                    { item: "Tortilla chips", amount: 2, unit: "bags", category: "pantry" },
+                    { item: "Ground beef", amount: 1, unit: "lb", category: "meat" },
+                    { item: "Nacho cheese sauce", amount: 1, unit: "jar", category: "pantry" },
+                    { item: "Jalapeños", amount: 1, unit: "jar", category: "pantry" },
+                    { item: "Sour cream", amount: 1, unit: "container", category: "dairy" },
+                    { item: "Salsa", amount: 1, unit: "jar", category: "pantry" }
+                ],
+                prepTasks: ["Brown ground beef"],
+                baseFamilySize: 4
+            },
+            {
+                id: 11, name: "Steak & Potatoes", mealType: "dinner",
+                ingredients: [
+                    { item: "Steaks", amount: 4, unit: "pieces", category: "meat" },
+                    { item: "Potatoes", amount: 2, unit: "lbs", category: "produce" },
+                    { item: "Butter", amount: 1, unit: "stick", category: "dairy" },
+                    { item: "Salt", amount: 1, unit: "container", category: "pantry" },
+                    { item: "Pepper", amount: 1, unit: "container", category: "pantry" },
+                    { item: "Garlic powder", amount: 1, unit: "container", category: "pantry" }
+                ],
+                prepTasks: ["Marinate steaks", "Wash and pierce potatoes"],
+                baseFamilySize: 4
+            },
+            {
+                id: 12, name: "Steak, Rice & Gravy", mealType: "dinner",
+                ingredients: [
+                    { item: "Steaks", amount: 4, unit: "pieces", category: "meat" },
+                    { item: "Rice", amount: 2, unit: "cups", category: "pantry" },
+                    { item: "Brown gravy mix", amount: 2, unit: "packets", category: "pantry" },
+                    { item: "Butter", amount: 1, unit: "stick", category: "dairy" },
+                    { item: "Beef broth", amount: 2, unit: "cups", category: "pantry" }
+                ],
+                prepTasks: ["Marinate steaks"],
+                baseFamilySize: 4
+            },
+            {
+                id: 13, name: "Italian Beef Sandwiches", mealType: "dinner",
+                ingredients: [
+                    { item: "Chuck roast", amount: 3, unit: "lbs", category: "meat" },
+                    { item: "Italian seasoning packet", amount: 1, unit: "packet", category: "pantry" },
+                    { item: "Pepperoncini", amount: 1, unit: "jar", category: "pantry" },
+                    { item: "Beef broth", amount: 2, unit: "cups", category: "pantry" },
+                    { item: "Hoagie rolls", amount: 8, unit: "count", category: "bakery" },
+                    { item: "Provolone cheese", amount: 8, unit: "slices", category: "dairy" }
+                ],
+                prepTasks: ["Season roast", "Slice rolls"],
+                baseFamilySize: 4
+            },
+            {
+                id: 14, name: "Hamburger Helper", mealType: "dinner",
+                ingredients: [
+                    { item: "Ground beef", amount: 1, unit: "lb", category: "meat" },
+                    { item: "Hamburger Helper box", amount: 1, unit: "box", category: "pantry" },
+                    { item: "Milk", amount: 1, unit: "cup", category: "dairy" },
+                    { item: "Butter", amount: 2, unit: "tbsp", category: "dairy" }
+                ],
+                prepTasks: [],
+                baseFamilySize: 4
+            },
+            {
+                id: 15, name: "BLT Sandwiches", mealType: "lunch",
+                ingredients: [
+                    { item: "Bacon", amount: 12, unit: "slices", category: "meat" },
+                    { item: "Bread", amount: 1, unit: "loaf", category: "bakery" },
+                    { item: "Lettuce", amount: 1, unit: "head", category: "produce" },
+                    { item: "Tomatoes", amount: 3, unit: "large", category: "produce" },
+                    { item: "Mayonnaise", amount: 1, unit: "jar", category: "pantry" }
+                ],
+                prepTasks: ["Cook bacon", "Slice tomatoes"],
+                baseFamilySize: 4
+            },
+            {
+                id: 16, name: "Chicken Philly Sandwich", mealType: "lunch",
+                ingredients: [
+                    { item: "Chicken breast", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Bell peppers", amount: 2, unit: "large", category: "produce" },
+                    { item: "Onion", amount: 1, unit: "large", category: "produce" },
+                    { item: "Provolone cheese", amount: 8, unit: "slices", category: "dairy" },
+                    { item: "Hoagie rolls", amount: 4, unit: "count", category: "bakery" },
+                    { item: "Olive oil", amount: 1, unit: "bottle", category: "pantry" }
+                ],
+                prepTasks: ["Slice chicken thin", "Slice peppers and onions"],
+                baseFamilySize: 4
+            },
+            {
+                id: 17, name: "Homemade Pizza", mealType: "dinner",
+                ingredients: [
+                    { item: "Pizza dough", amount: 2, unit: "balls", category: "bakery" },
+                    { item: "Pizza sauce", amount: 1, unit: "jar", category: "pantry" },
+                    { item: "Mozzarella cheese", amount: 2, unit: "cups", category: "dairy" },
+                    { item: "Pepperoni", amount: 1, unit: "package", category: "meat" },
+                    { item: "Italian sausage", amount: 0.5, unit: "lb", category: "meat" }
+                ],
+                prepTasks: ["Let dough come to room temperature", "Brown sausage"],
+                baseFamilySize: 4
+            },
+            {
+                id: 18, name: "Frozen Pizza", mealType: "dinner",
+                ingredients: [
+                    { item: "Frozen pizza", amount: 2, unit: "large", category: "frozen" }
+                ],
+                prepTasks: [],
+                baseFamilySize: 4
+            },
+            {
+                id: 19, name: "Fried Chicken Sandwiches", mealType: "dinner",
+                ingredients: [
+                    { item: "Chicken breast", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Flour", amount: 2, unit: "cups", category: "pantry" },
+                    { item: "Eggs", amount: 2, unit: "large", category: "dairy" },
+                    { item: "Breadcrumbs", amount: 1, unit: "container", category: "pantry" },
+                    { item: "Hamburger buns", amount: 4, unit: "count", category: "bakery" },
+                    { item: "Lettuce", amount: 1, unit: "head", category: "produce" },
+                    { item: "Mayonnaise", amount: 1, unit: "jar", category: "pantry" }
+                ],
+                prepTasks: ["Pound chicken flat", "Set up breading station"],
+                baseFamilySize: 4
+            },
+            {
+                id: 20, name: "Chicken Wraps", mealType: "lunch",
+                ingredients: [
+                    { item: "Chicken breast", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Large tortillas", amount: 4, unit: "count", category: "bakery" },
+                    { item: "Lettuce", amount: 1, unit: "head", category: "produce" },
+                    { item: "Tomatoes", amount: 2, unit: "medium", category: "produce" },
+                    { item: "Shredded cheese", amount: 1, unit: "cup", category: "dairy" },
+                    { item: "Ranch dressing", amount: 1, unit: "bottle", category: "pantry" }
+                ],
+                prepTasks: ["Cook and slice chicken", "Chop vegetables"],
+                baseFamilySize: 4
+            },
+            {
+                id: 21, name: "Chicken Alfredo", mealType: "dinner",
+                ingredients: [
+                    { item: "Chicken breast", amount: 2, unit: "lbs", category: "meat" },
+                    { item: "Fettuccine pasta", amount: 1, unit: "lb", category: "pantry" },
+                    { item: "Alfredo sauce", amount: 2, unit: "jars", category: "pantry" },
+                    { item: "Parmesan cheese", amount: 1, unit: "container", category: "dairy" },
+                    { item: "Garlic", amount: 3, unit: "cloves", category: "produce" },
+                    { item: "Butter", amount: 2, unit: "tbsp", category: "dairy" }
+                ],
+                prepTasks: ["Cut chicken into strips", "Mince garlic"],
+                baseFamilySize: 4
+            },
+            // Adding some breakfast options
+            {
+                id: 22, name: "Pancakes", mealType: "breakfast",
+                ingredients: [
+                    { item: "Pancake mix", amount: 1, unit: "box", category: "pantry" },
+                    { item: "Eggs", amount: 2, unit: "large", category: "dairy" },
+                    { item: "Milk", amount: 1, unit: "cup", category: "dairy" },
+                    { item: "Maple syrup", amount: 1, unit: "bottle", category: "pantry" },
+                    { item: "Butter", amount: 1, unit: "stick", category: "dairy" }
+                ],
+                prepTasks: ["Mix batter ahead"],
+                baseFamilySize: 4
+            },
+            {
+                id: 23, name: "Scrambled Eggs & Toast", mealType: "breakfast",
+                ingredients: [
+                    { item: "Eggs", amount: 8, unit: "large", category: "dairy" },
+                    { item: "Bread", amount: 1, unit: "loaf", category: "bakery" },
+                    { item: "Butter", amount: 1, unit: "stick", category: "dairy" },
+                    { item: "Milk", amount: 0.25, unit: "cup", category: "dairy" },
+                    { item: "Salt", amount: 1, unit: "container", category: "pantry" },
+                    { item: "Pepper", amount: 1, unit: "container", category: "pantry" }
+                ],
+                prepTasks: [],
+                baseFamilySize: 4
+            },
+            {
+                id: 24, name: "Cereal & Milk", mealType: "breakfast",
+                ingredients: [
+                    { item: "Cereal", amount: 1, unit: "box", category: "pantry" },
+                    { item: "Milk", amount: 0.5, unit: "gallon", category: "dairy" }
+                ],
+                prepTasks: [],
+                baseFamilySize: 4
+            }
+        ];
+
+        // Initialize the app
+        function init() {
+            setupEventListeners();
+            renderMealBank();
+            renderCalendar();
+            updateGroceryList();
+            updatePrepList();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('familySize').addEventListener('change', (e) => {
+                familySize = parseInt(e.target.value);
+                updateGroceryList();
+            });
+
+            document.getElementById('weekViewBtn').addEventListener('click', () => setView('week'));
+            document.getElementById('monthViewBtn').addEventListener('click', () => setView('month'));
+            document.getElementById('prevWeek').addEventListener('click', () => changeWeek(-1));
+            document.getElementById('nextWeek').addEventListener('click', () => changeWeek(1));
+
+            document.getElementById('addMealBtn').addEventListener('click', openAddMealModal);
+            document.getElementById('closeModal').addEventListener('click', closeModal);
+            document.getElementById('cancelModal').addEventListener('click', closeModal);
+            document.getElementById('saveMeal').addEventListener('click', saveMeal);
+            document.getElementById('addIngredientBtn').addEventListener('click', addIngredientRow);
+            document.getElementById('addPrepTaskBtn').addEventListener('click', addPrepTaskRow);
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.getElementById('weekViewBtn').className = 
+                view === 'week' 
+                    ? 'px-4 py-2 rounded-md font-medium transition-colors bg-rose-100 text-rose-700 border border-rose-300'
+                    : 'px-4 py-2 rounded-md font-medium transition-colors bg-stone-100 text-stone-600 hover:bg-stone-200';
+            
+            document.getElementById('monthViewBtn').className = 
+                view === 'month' 
+                    ? 'px-4 py-2 rounded-md font-medium transition-colors bg-rose-100 text-rose-700 border border-rose-300'
+                    : 'px-4 py-2 rounded-md font-medium transition-colors bg-stone-100 text-stone-600 hover:bg-stone-200';
+            
+            document.getElementById('calendarTitle').textContent = 
+                view === 'week' ? 'Weekly Meal Plan' : 'Monthly Meal Plan';
+            
+            renderCalendar();
+        }
+
+        function changeWeek(direction) {
+            currentWeek += direction;
+            renderCalendar();
+        }
+
+        function renderMealBank() {
+            const container = document.getElementById('mealBank');
+            container.innerHTML = '';
+            
+            // Group meals by type
+            const mealTypes = {
+                breakfast: { name: 'Breakfast', meals: [], collapsed: false },
+                lunch: { name: 'Lunch', meals: [], collapsed: false },
+                dinner: { name: 'Dinner', meals: [], collapsed: false }
+            };
+            
+            mealBank.forEach(meal => {
+                const type = meal.mealType || 'dinner';
+                if (mealTypes[type]) {
+                    mealTypes[type].meals.push(meal);
+                }
+            });
+            
+            // Render each section
+            Object.entries(mealTypes).forEach(([type, section]) => {
+                if (section.meals.length === 0) return;
+                
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'mb-4';
+                
+                // Section header
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'flex justify-between items-center mb-2 cursor-pointer p-2 bg-stone-100 rounded-md hover:bg-stone-200';
+                headerDiv.innerHTML = `
+                    <h3 class="font-medium text-stone-700">${section.name} (${section.meals.length})</h3>
+                    <span class="text-stone-500 section-toggle" data-type="${type}">
+                        ${section.collapsed ? '▶' : '▼'}
+                    </span>
+                `;
+                
+                headerDiv.addEventListener('click', () => toggleSection(type));
+                sectionDiv.appendChild(headerDiv);
+                
+                // Meals container
+                const mealsContainer = document.createElement('div');
+                mealsContainer.className = `space-y-2 section-content-${type}`;
+                mealsContainer.style.display = section.collapsed ? 'none' : 'block';
+                
+                section.meals.forEach(meal => {
+                    const mealDiv = document.createElement('div');
+                    mealDiv.className = 'p-3 bg-stone-50 rounded-lg border border-stone-200 hover:bg-rose-50 hover:border-rose-200 transition-colors';
+                    
+                    mealDiv.innerHTML = `
+                        <div class="cursor-move flex justify-between items-start">
+                            <div class="flex-1" draggable="true" data-meal-id="${meal.id}">
+                                <div class="font-medium text-stone-800">${meal.name}</div>
+                                <div class="text-sm text-stone-600 mt-1">${meal.ingredients.length} ingredients</div>
+                            </div>
+                            <button class="text-stone-400 hover:text-rose-500 p-1 edit-meal-btn" data-meal-id="${meal.id}" title="Edit meal">
+                                ✏️
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Add drag event listeners
+                    const draggableElement = mealDiv.querySelector('[draggable="true"]');
+                    draggableElement.addEventListener('dragstart', (e) => {
+                        draggedMeal = meal;
+                        e.dataTransfer.effectAllowed = 'move';
+                        mealDiv.classList.add('drag-preview');
+                    });
+                    
+                    draggableElement.addEventListener('dragend', () => {
+                        mealDiv.classList.remove('drag-preview');
+                    });
+
+                    // Add edit button listener
+                    mealDiv.querySelector('.edit-meal-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openEditMealModal(meal);
+                    });
+                    
+                    mealsContainer.appendChild(mealDiv);
+                });
+                
+                sectionDiv.appendChild(mealsContainer);
+                container.appendChild(sectionDiv);
+            });
+        }
+
+        function toggleSection(type) {
+            const content = document.querySelector(`.section-content-${type}`);
+            const toggle = document.querySelector(`[data-type="${type}"]`);
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▶';
+            }
+        }
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+            
+            // Add day headers
+            daysOfWeek.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'text-center font-medium text-stone-700 p-2 text-sm';
+                dayHeader.textContent = day.slice(0, 3);
+                calendar.appendChild(dayHeader);
+            });
+            
+            const dates = getCalendarDates();
+            dates.forEach((date, dateIndex) => {
+                const isCurrentWeek = dateIndex < 7;
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'border border-stone-200 rounded-lg p-2 min-h-[120px]';
+                
+                const dateLabel = document.createElement('div');
+                dateLabel.className = 'text-xs font-medium text-stone-600 mb-2';
+                dateLabel.textContent = date.getDate();
+                dateDiv.appendChild(dateLabel);
+                
+                mealTimes.forEach(mealTime => {
+                    // For month view, only show breakfast/lunch for current week
+                    if (currentView === 'month' && !isCurrentWeek && mealTime !== 'dinner') {
+                        return;
+                    }
+                    
+                    const key = `${formatDate(date)}-${mealTime}`;
+                    const plannedMeal = plannedMeals[key];
+                    
+                    const mealSlot = document.createElement('div');
+                    mealSlot.className = `mb-1 p-1 rounded text-xs min-h-[20px] border border-dashed border-stone-300 drop-zone ${
+                        plannedMeal ? 'bg-rose-50 border-rose-200' : 'hover:bg-stone-50'
+                    }`;
+                    mealSlot.dataset.date = formatDate(date);
+                    mealSlot.dataset.mealTime = mealTime;
+                    
+                    if (plannedMeal) {
+                        mealSlot.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <span class="text-stone-700">${plannedMeal.name}</span>
+                                <button class="text-stone-400 hover:text-red-500 remove-meal" data-date="${formatDate(date)}" data-meal-time="${mealTime}">
+                                    ×
+                                </button>
+                            </div>
+                        `;
+                        
+                        const removeBtn = mealSlot.querySelector('.remove-meal');
+                        removeBtn.addEventListener('click', () => removePlannedMeal(formatDate(date), mealTime));
+                    } else {
+                        mealSlot.innerHTML = `<span class="text-stone-400">${mealTime}</span>`;
+                    }
+                    
+                    // Add drop event listeners
+                    mealSlot.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        mealSlot.classList.add('drag-over');
+                    });
+                    
+                    mealSlot.addEventListener('dragleave', () => {
+                        mealSlot.classList.remove('drag-over');
+                    });
+                    
+                    mealSlot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        mealSlot.classList.remove('drag-over');
+                        if (draggedMeal) {
+                            addPlannedMeal(formatDate(date), mealTime, draggedMeal);
+                            draggedMeal = null;
+                        }
+                    });
+                    
+                    dateDiv.appendChild(mealSlot);
+                });
+                
+                calendar.appendChild(dateDiv);
+            });
+        }
+
+        function getCalendarDates() {
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() + (currentWeek * 7));
+            startDate.setDate(startDate.getDate() - startDate.getDay());
+            
+            const dates = [];
+            for (let i = 0; i < (currentView === 'month' ? 28 : 7); i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                dates.push(date);
+            }
+            return dates;
+        }
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function addPlannedMeal(date, mealTime, meal) {
+            const key = `${date}-${mealTime}`;
+            plannedMeals[key] = meal;
+            renderCalendar();
+            updateGroceryList();
+            updatePrepList();
+        }
+
+        function removePlannedMeal(date, mealTime) {
+            const key = `${date}-${mealTime}`;
+            delete plannedMeals[key];
+            renderCalendar();
+            updateGroceryList();
+            updatePrepList();
+        }
+
+        function scaleIngredient(ingredient, meal) {
+            const multiplier = familySize / meal.baseFamilySize;
+            return {
+                ...ingredient,
+                amount: (ingredient.amount * multiplier).toFixed(1)
+            };
+        }
+
+        function updateGroceryList() {
+            const container = document.getElementById('groceryList');
+            const ingredients = {};
+            
+            Object.values(plannedMeals).forEach(meal => {
+                meal.ingredients.forEach(ingredient => {
+                    const scaled = scaleIngredient(ingredient, meal);
+                    const key = `${scaled.item}-${scaled.unit}`;
+                    
+                    if (ingredients[key]) {
+                        ingredients[key].amount = (parseFloat(ingredients[key].amount) + parseFloat(scaled.amount)).toFixed(1);
+                    } else {
+                        ingredients[key] = { ...scaled };
+                    }
+                });
+            });
+
+            // Group by category
+            const grouped = {};
+            Object.values(ingredients).forEach(ingredient => {
+                const category = ingredient.category;
+                if (!grouped[category]) grouped[category] = [];
+                grouped[category].push(ingredient);
+            });
+
+            if (Object.keys(grouped).length === 0) {
+                container.innerHTML = '<p class="text-stone-500 italic">Add meals to generate grocery list</p>';
+                return;
+            }
+
+            let html = '<div class="space-y-4">';
+            Object.entries(grouped).forEach(([category, ingredients]) => {
+                html += `
+                    <div>
+                        <h3 class="font-medium text-stone-700 border-b border-stone-200 pb-1 mb-2">
+                            ${storeCategories[category]}
+                        </h3>
+                        <ul class="space-y-1">
+                `;
+                ingredients.forEach(ingredient => {
+                    html += `
+                        <li class="text-sm text-stone-600 flex justify-between">
+                            <span>${ingredient.item}</span>
+                            <span>${ingredient.amount} ${ingredient.unit}</span>
+                        </li>
+                    `;
+                });
+                html += '</ul></div>';
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        function updatePrepList() {
+            const container = document.getElementById('prepList');
+            const tasks = [];
+            
+            Object.values(plannedMeals).forEach(meal => {
+                meal.prepTasks?.forEach(task => {
+                    if (task.trim() && !tasks.some(t => t.task === task && t.meal === meal.name)) {
+                        tasks.push({ task, meal: meal.name });
+                    }
+                });
+            });
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<p class="text-stone-500 italic">No prep tasks available</p>';
+                return;
+            }
+
+            let html = '<div class="space-y-2">';
+            tasks.forEach(item => {
+                html += `
+                    <div class="text-sm">
+                        <div class="font-medium text-stone-700">${item.task}</div>
+                        <div class="text-stone-500 text-xs">for ${item.meal}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        function openAddMealModal() {
+            editingMeal = null;
+            document.getElementById('modalTitle').textContent = 'Add New Meal';
+            document.getElementById('saveMeal').textContent = 'Add Meal';
+            clearMealForm();
+            document.getElementById('mealModal').classList.remove('hidden');
+        }
+
+        function openEditMealModal(meal) {
+            editingMeal = meal;
+            document.getElementById('modalTitle').textContent = 'Edit Meal';
+            document.getElementById('saveMeal').textContent = 'Save Changes';
+            populateMealForm(meal);
+            document.getElementById('mealModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('mealModal').classList.add('hidden');
+            editingMeal = null;
+        }
+
+        function clearMealForm() {
+            document.getElementById('mealName').value = '';
+            document.getElementById('mealType').value = 'dinner';
+            renderIngredientsList([{ item: '', amount: '', unit: '', category: 'produce' }]);
+            renderPrepTasksList(['']);
+        }
+
+        function populateMealForm(meal) {
+            document.getElementById('mealName').value = meal.name;
+            document.getElementById('mealType').value = meal.mealType || 'dinner';
+            renderIngredientsList(meal.ingredients);
+            renderPrepTasksList(meal.prepTasks);
+        }
+
+        function renderIngredientsList(ingredients) {
+            const container = document.getElementById('ingredientsList');
+            container.innerHTML = '';
+            
+            ingredients.forEach((ingredient, index) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-4 gap-2';
+                row.innerHTML = `
+                    <input type="text" placeholder="Item" value="${ingredient.item}" 
+                           class="p-1 border border-stone-300 rounded text-sm ingredient-item" data-index="${index}">
+                    <input type="number" placeholder="Amount" value="${ingredient.amount}" 
+                           class="p-1 border border-stone-300 rounded text-sm ingredient-amount" data-index="${index}">
+                    <input type="text" placeholder="Unit" value="${ingredient.unit}" 
+                           class="p-1 border border-stone-300 rounded text-sm ingredient-unit" data-index="${index}">
+                    <select class="p-1 border border-stone-300 rounded text-sm ingredient-category" data-index="${index}">
+                        ${Object.entries(storeCategories).map(([key, label]) => 
+                            `<option value="${key}" ${ingredient.category === key ? 'selected' : ''}>${label}</option>`
+                        ).join('')}
+                    </select>
+                `;
+                container.appendChild(row);
+            });
+
+            // Add event listeners
+            container.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('input', updateIngredientData);
+            });
+        }
+
+        function renderPrepTasksList(tasks) {
+            const container = document.getElementById('prepTasksList');
+            container.innerHTML = '';
+            
+            tasks.forEach((task, index) => {
+                const row = document.createElement('div');
+                row.className = 'flex gap-2';
+                row.innerHTML = `
+                    <input type="text" placeholder="Prep task" value="${task}" 
+                           class="flex-1 p-1 border border-stone-300 rounded text-sm prep-task" data-index="${index}">
+                `;
+                container.appendChild(row);
+            });
+
+            // Add event listeners
+            container.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', updatePrepTaskData);
+            });
+        }
+
+        function updateIngredientData() {
+            // Ingredients data is collected when saving
+        }
+
+        function updatePrepTaskData() {
+            // Prep tasks data is collected when saving
+        }
+
+        function addIngredientRow() {
+            const container = document.getElementById('ingredientsList');
+            const currentIngredients = collectIngredientData();
+            currentIngredients.push({ item: '', amount: '', unit: '', category: 'produce' });
+            renderIngredientsList(currentIngredients);
+        }
+
+        function addPrepTaskRow() {
+            const container = document.getElementById('prepTasksList');
+            const currentTasks = collectPrepTaskData();
+            currentTasks.push('');
+            renderPrepTasksList(currentTasks);
+        }
+
+        function collectIngredientData() {
+            const ingredients = [];
+            document.querySelectorAll('#ingredientsList .grid').forEach((row, index) => {
+                const item = row.querySelector('.ingredient-item').value;
+                const amount = parseFloat(row.querySelector('.ingredient-amount').value) || 0;
+                const unit = row.querySelector('.ingredient-unit').value;
+                const category = row.querySelector('.ingredient-category').value;
+                ingredients.push({ item, amount, unit, category });
+            });
+            return ingredients;
+        }
+
+        function collectPrepTaskData() {
+            const tasks = [];
+            document.querySelectorAll('#prepTasksList .prep-task').forEach(input => {
+                tasks.push(input.value);
+            });
+            return tasks;
+        }
+
+        function saveMeal() {
+            const name = document.getElementById('mealName').value.trim();
+            const mealType = document.getElementById('mealType').value;
+            if (!name) return;
+
+            const ingredients = collectIngredientData().filter(ing => ing.item.trim());
+            const prepTasks = collectPrepTaskData().filter(task => task.trim());
+
+            if (editingMeal) {
+                // Update existing meal
+                const index = mealBank.findIndex(m => m.id === editingMeal.id);
+                if (index !== -1) {
+                    mealBank[index] = {
+                        ...editingMeal,
+                        name,
+                        mealType,
+                        ingredients,
+                        prepTasks,
+                        baseFamilySize: 4
+                    };
+                }
+            } else {
+                // Add new meal
+                const newMeal = {
+                    id: Math.max(...mealBank.map(m => m.id)) + 1,
+                    name,
+                    mealType,
+                    ingredients,
+                    prepTasks,
+                    baseFamilySize: 4
+                };
+                mealBank.push(newMeal);
+            }
+
+            renderMealBank();
+            closeModal();
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
